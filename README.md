@@ -29,6 +29,7 @@ A Unity editor extension that adds a Favourites panel with a Tree View where you
 ### Opening the Panel
 - Go to `Tools > Favourites` in the Unity menu bar
 - The Favourites panel will open as a dockable window
+- The panel automatically refreshes when the Hierarchy or Project changes
 
 ### Adding Categories
 - Click the [+] button in the Favourites panel toolbar
@@ -43,8 +44,10 @@ A Unity editor extension that adds a Favourites panel with a Tree View where you
 - **Remove Item**: Select an item and click the [-] button
 - **Remove Category**: Select a category and click the [-] button (removes category and all its items)
 - **Open Item**: Double-click on any item to open it
+- **Expand/Collapse**: Double-click on a category to expand or collapse it
 - **Ping Item**: Right-click on an item to ping it in the Project or Hierarchy panel
 - **Drag to Inspector**: Drag items from Favourites to component properties in the Inspector
+- **Search**: Use the search field to filter items by name
 
 ### Organization
 - Create multiple categories to organize different types of assets
@@ -60,12 +63,17 @@ If you were using the previous version with ScriptableObject storage:
 ### Data Management
 - **View Data Location**: `Tools > Favourites > Show Data Location`
 - **Clear All Favourites**: `Tools > Favourites > Clear All Favourites`
+- **Migrate from ScriptableObject**: `Tools > Favourites > Migrate from ScriptableObject`
+- **Validate Data**: `Tools > Favourites > Validate ScriptableObject Data`
+- **Debug Data**: `Tools > Favourites > Debug Current Data`
+- **Clean Invalid Entries**: `Tools > Favourites > Clean Invalid Entries`
 - Data is stored at: `{Application.persistentDataPath}/FavouritesData.json`
 
 ## Requirements
 
 - Unity 2021.3 or later
 - No additional dependencies required
+- Editor-only functionality (not included in builds)
 
 ## License
 

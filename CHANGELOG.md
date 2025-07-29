@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.0.0] - 2025-01-XX
+## [2.0.0] - 2025-01-27
 
 ### Changed
 - **BREAKING CHANGE**: Replaced ScriptableObject storage with persistent data path storage
@@ -31,7 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Use `Tools > Favourites > Migrate from ScriptableObject` to transfer existing data
 - Old ScriptableObject assets can be safely deleted after migration
 
-## [1.0.0] - 2025-07-28
+## [1.0.0] - 2024-07-28
 
 ### Added
 - Initial release of Unity Favourites Panel
@@ -45,7 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Persistent asset storage
 
 ### Features
-- Favourites panel accessible via Window > Favourites menu
+- Favourites panel accessible via Tools > Favourites menu
 - Hierarchical organization of assets in categories
 - Seamless integration with Unity's existing panels
 - Automatic cleanup of scene objects when scenes are closed 

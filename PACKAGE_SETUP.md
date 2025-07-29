@@ -13,7 +13,7 @@ This Unity project has been successfully converted into a UPM (Unity Package Man
 ### 2. Documentation Added
 - **`README.md`**: Comprehensive user documentation with installation and usage instructions
 - **`CHANGELOG.md`**: Version history tracking
-- **`Documentation~/README.md`**: Technical documentation for developers
+- **`PACKAGE_SETUP.md`**: This technical documentation for developers
 - **`.gitignore`**: Proper exclusions for Unity projects
 
 ### 3. Files Moved
@@ -38,6 +38,7 @@ This Unity project has been successfully converted into a UPM (Unity Package Man
 - **Dependencies**: No external dependencies required
 - **Unity Version**: Requires Unity 2021.3 or later
 - **License**: Public domain (Unlicense)
+- **Data Storage**: Uses persistent data path for user-specific storage
 
 ## Installation Instructions for Users
 
@@ -57,9 +58,11 @@ This Unity project has been successfully converted into a UPM (Unity Package Man
 - `TreeElement.cs` - Base tree element class
 - `TreeElementUtility.cs` - Tree utility functions
 - `TreeModel.cs` - Tree data structure management
-- `FavouritesContainer.cs` - Favourites data container
+- `FavouritesContainer.cs` - Legacy container (deprecated, kept for compatibility)
 - `FavouritesElement.cs` - Individual favourite item representation
 - `FavouritesCategory.cs` - Category management
+- `FavouritesData.cs` - Data structure for JSON serialization
+- `FavouritesManager.cs` - Singleton manager for data operations
 
 ### Editor Scripts
 - `FavouritesEdWindow.cs` - Main editor window
@@ -69,6 +72,16 @@ This Unity project has been successfully converted into a UPM (Unity Package Man
 - `TreeViewWithTreeModel.cs` - Generic tree view
 - `FavouritesEd.cs` - Editor functionality
 - `FavouritesTreeElement.cs` - Tree element for favourites
+- `FavouritesMigration.cs` - Migration utilities for legacy data
+
+## Data Storage
+
+The package uses a modern data storage system:
+- **Location**: `{Application.persistentDataPath}/FavouritesData.json`
+- **Format**: JSON serialization
+- **User-specific**: Each user has their own data file
+- **Automatic**: Data is automatically saved and loaded
+- **Migration**: Tools available to migrate from old ScriptableObject system
 
 ## Next Steps
 
