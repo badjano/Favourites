@@ -18,7 +18,7 @@ namespace FavouritesEd
 
 		// ------------------------------------------------------------------------------------------------------------------
 
-		[MenuItem("Window/Favourites")]
+		[MenuItem("Tools/Favourites")]
 		private static void ShowWindow()
 		{
 			GetWindow<FavouritesEdWindow>("Favourites").UpdateTreeview();

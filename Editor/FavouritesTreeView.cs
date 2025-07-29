@@ -292,12 +292,44 @@ namespace FavouritesEd
 		{
 			if (Invoke_folderIconName == null)
 			{
-				Assembly asm = Assembly.GetAssembly(typeof(Editor));
-				PropertyInfo prop = asm.GetType("UnityEditorInternal.EditorResourcesUtility").GetProperty("folderIconName", (BindingFlags.Static | BindingFlags.Public));
-				MethodInfo method = prop.GetGetMethod(true);
-				Invoke_folderIconName = (System.Func<string>)System.Delegate.CreateDelegate(typeof(System.Func<string>), method);
+				try
+				{
+					Assembly asm = Assembly.GetAssembly(typeof(Editor));
+					System.Type editorResourcesType = asm.GetType("UnityEditorInternal.EditorResourcesUtility");
+					if (editorResourcesType != null)
+					{
+						PropertyInfo prop = editorResourcesType.GetProperty("folderIconName", (BindingFlags.Static | BindingFlags.Public));
+						if (prop != null)
+						{
+							MethodInfo method = prop.GetGetMethod(true);
+							if (method != null)
+							{
+								Invoke_folderIconName = (System.Func<string>)System.Delegate.CreateDelegate(typeof(System.Func<string>), method);
+							}
+						}
+					}
+				}
+				catch (System.Exception ex)
+				{
+					Debug.LogWarning("Failed to get folder icon name via reflection: " + ex.Message);
+				}
 			}
-			return Invoke_folderIconName();
+			
+			// Fallback to a known folder icon name if reflection fails
+			if (Invoke_folderIconName == null)
+			{
+				return "FolderOpened Icon";
+			}
+			
+			try
+			{
+				return Invoke_folderIconName();
+			}
+			catch (System.Exception ex)
+			{
+				Debug.LogWarning("Failed to invoke folder icon name: " + ex.Message);
+				return "FolderOpened Icon";
+			}
 		}
 
 		// ------------------------------------------------------------------------------------------------------------

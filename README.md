@@ -1,18 +1,67 @@
 # Unity Favourites Panel
 
-This will add a new panel with a Tree View where you add categories and can drag-and-drop objects from the Hierarchy or Project panel into.
+A Unity editor extension that adds a Favourites panel with a Tree View where you can add categories and drag-and-drop objects from the Hierarchy or Project panel.
 
-- The panel can be opened from menu: `Window > Favourites`.
-- Use the [+] button in the Favourites panel's toolbar to add a new category.
-- Use the [-] button to remove the selected category and all its items or to remove a single selected item.
-- Double-click on an item to open it. For example to open a scene you have added to Favourites.
-- Right-click to ping a Favourites item in the Hierarchy or Project panel.
-- Drag-and-drop items to new categories or other areas of Unity. You can for example drag-and-drop a Sprite from the Favourites panel into the property of a component's Inspector (if that property accept Sprites).
+## Features
 
-### Technical Info
+- **Tree View Interface**: Organize your favourite assets in a hierarchical tree structure
+- **Drag & Drop Support**: Easily drag objects from Hierarchy or Project panel into categories
+- **Category Management**: Add and remove categories with the [+] and [-] buttons
+- **Quick Access**: Double-click items to open them, right-click to ping in Project/Hierarchy
+- **Cross-Panel Integration**: Drag items from Favourites to other Unity panels (Inspector, etc.)
 
-The favourites system's main asset file is saved next to the editor scripts, so that would be in `\Assets\Favourites\Editor` by default.
+## Installation
 
-The list of favourite scene objects however are saved in an object in the scene since assets/prefabs can't reference objects in the scene. This object is tagged as editor only so it will not end up in your final builds. You will also notice that when you close the scene the favourite scene objects will disapear from the list of favourites. It will be back when you open the scene and did not delete the category the objects was under.
+### Via Git URL (Recommended)
+1. Open Unity Package Manager (Window > Package Manager)
+2. Click the '+' button and select "Add package from git URL"
+3. Enter: `https://github.com/badjano/unity-favourites.git`
 
-![screenshot](https://user-images.githubusercontent.com/837362/34055429-d059f5ce-e1d7-11e7-8855-1b19dc2ad052.png)
+### Via Local Package
+1. Download or clone this repository
+2. In Unity Package Manager, click the '+' button and select "Add package from disk"
+3. Navigate to the package folder and select the `package.json` file
+
+## Usage
+
+### Opening the Panel
+- Go to `Window > Favourites` in the Unity menu bar
+- The Favourites panel will open as a dockable window
+
+### Adding Categories
+- Click the [+] button in the Favourites panel toolbar
+- Enter a name for your new category
+- Press Enter or click OK
+
+### Adding Items
+- Drag and drop objects from the Hierarchy or Project panel into any category
+- Items will be automatically organized under their respective categories
+
+### Managing Items
+- **Remove Item**: Select an item and click the [-] button
+- **Remove Category**: Select a category and click the [-] button (removes category and all its items)
+- **Open Item**: Double-click on any item to open it
+- **Ping Item**: Right-click on an item to ping it in the Project or Hierarchy panel
+- **Drag to Inspector**: Drag items from Favourites to component properties in the Inspector
+
+### Organization
+- Create multiple categories to organize different types of assets
+- Drag items between categories to reorganize
+- Use descriptive category names for better organization
+
+## Requirements
+
+- Unity 2021.3 or later
+- No additional dependencies required
+
+## License
+
+This project is released into the public domain under the [Unlicense](UNLICENSE).
+
+## Contributing
+
+Contributions are welcome! Feel free to submit issues, feature requests, or pull requests.
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for version history and updates.
