@@ -9,6 +9,8 @@ A Unity editor extension that adds a Favourites panel with a Tree View where you
 - **Category Management**: Add and remove categories with the [+] and [-] buttons
 - **Quick Access**: Double-click items to open them, right-click to ping in Project/Hierarchy
 - **Cross-Panel Integration**: Drag items from Favourites to other Unity panels (Inspector, etc.)
+- **User-Specific Storage**: Each user has their own favourites saved in the persistent data path
+- **Persistent Data**: Favourites are automatically saved and persist between Unity sessions
 
 ## Installation
 
@@ -25,7 +27,7 @@ A Unity editor extension that adds a Favourites panel with a Tree View where you
 ## Usage
 
 ### Opening the Panel
-- Go to `Window > Favourites` in the Unity menu bar
+- Go to `Tools > Favourites` in the Unity menu bar
 - The Favourites panel will open as a dockable window
 
 ### Adding Categories
@@ -48,6 +50,17 @@ A Unity editor extension that adds a Favourites panel with a Tree View where you
 - Create multiple categories to organize different types of assets
 - Drag items between categories to reorganize
 - Use descriptive category names for better organization
+
+### Migration from Old System
+If you were using the previous version with ScriptableObject storage:
+- Go to `Tools > Favourites > Migrate from ScriptableObject` to transfer your existing favourites
+- After migration, you can safely delete the old ScriptableObject assets
+- Your favourites will now be stored in the persistent data path for each user
+
+### Data Management
+- **View Data Location**: `Tools > Favourites > Show Data Location`
+- **Clear All Favourites**: `Tools > Favourites > Clear All Favourites`
+- Data is stored at: `{Application.persistentDataPath}/FavouritesData.json`
 
 ## Requirements
 

@@ -1,221 +1,117 @@
-﻿using System.Collections.Generic;
-using UnityEngine;
-using UnityEditor;
+﻿using UnityEditor;
 using UnityEditor.IMGUI.Controls;
-using UnityEditor.SceneManagement;
+using UnityEngine;
 
 namespace FavouritesEd
 {
-	public class FavouritesEdWindow : EditorWindow
-	{
-		private static readonly GUIContent GC_Add = new GUIContent("+", "Add category");
-		private static readonly GUIContent GC_Remove = new GUIContent("-", "Remove selected");
+    public class FavouritesEdWindow : EditorWindow
+    {
+        private static readonly GUIContent GC_Add = new("+", "Add category");
+        private static readonly GUIContent GC_Remove = new("-", "Remove selected");
 
-		[SerializeField] private FavouritesAsset asset; 
-		[SerializeField] private TreeViewState treeViewState;
-		[SerializeField] private FavouritesTreeView treeView; 
-		[SerializeField] private SearchField searchField;
+        [SerializeField] private TreeViewState treeViewState;
+        private SearchField searchField;
+        [SerializeField] private FavouritesTreeView treeView;
 
-		// ------------------------------------------------------------------------------------------------------------------
+        private void OnEnable()
+        {
+            // Ensure data is fresh when window opens
+            FavouritesManager.Instance.RefreshData();
+            UpdateTreeview();
+        }
 
-		[MenuItem("Tools/Favourites")]
-		private static void ShowWindow()
-		{
-			GetWindow<FavouritesEdWindow>("Favourites").UpdateTreeview();
-		}
+        private void OnGUI()
+        {
+            if (treeView == null) UpdateTreeview();
 
-		private void OnHierarchyChange()
-		{
-			UpdateTreeview();
-		}
+            EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
+            {
+                treeView.searchString = searchField.OnToolbarGUI(treeView.searchString, GUILayout.ExpandWidth(true));
+                GUILayout.Space(5);
+                if (GUILayout.Button(GC_Add, EditorStyles.toolbarButton, GUILayout.Width(25)))
+                    TextInputWindow.ShowWindow("Favourites", "Enter category name", "", AddCategory, null);
+                GUI.enabled = treeView.Model.Data.Count > 0;
+                if (GUILayout.Button(GC_Remove, EditorStyles.toolbarButton, GUILayout.Width(25))) RemoveSelected();
+                GUI.enabled = true;
+            }
+            EditorGUILayout.EndHorizontal();
 
-		private void OnProjectChange()
-		{
-			UpdateTreeview();
-		}
+            treeView.OnGUI();
+        }
 
-		private void UpdateTreeview()
-		{
-			if (asset == null)
-			{
-				LoadAsset();
-			}
+        private void OnHierarchyChange()
+        {
+            UpdateTreeview();
+        }
 
-			if (treeViewState == null)
-				treeViewState = new TreeViewState();
+        private void OnProjectChange()
+        {
+            UpdateTreeview();
+        }
 
-			if (treeView == null)
-			{
-				searchField = null;
-				treeView = new FavouritesTreeView(treeViewState);
-			}
+        [MenuItem("Tools/Favourites")]
+        private static void ShowWindow()
+        {
+            GetWindow<FavouritesEdWindow>("Favourites").UpdateTreeview();
+        }
 
-			if (searchField == null)
-			{
-				searchField = new SearchField();
-				searchField.downOrUpArrowKeyPressed += treeView.SetFocusAndEnsureSelectedItem;
-			}
+        public void UpdateTreeview()
+        {
+            if (treeViewState == null)
+                treeViewState = new TreeViewState();
 
-			treeView.LoadAndUpdate(asset);
-			Repaint();
-		}
+            if (treeView == null)
+            {
+                searchField = null;
+                treeView = new FavouritesTreeView(treeViewState);
+            }
 
-		// ------------------------------------------------------------------------------------------------------------------
+            if (searchField == null)
+            {
+                searchField = new SearchField();
+                searchField.downOrUpArrowKeyPressed += treeView.SetFocusAndEnsureSelectedItem;
+            }
 
-		private void OnGUI()
-		{
-			if (treeView == null)
-			{
-				UpdateTreeview();
-			}
+            // Ensure we have fresh data
+            FavouritesManager.Instance.RefreshData();
+            treeView.LoadAndUpdate(FavouritesManager.Instance.Data);
+            Repaint();
+        }
 
-			EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
-			{
-				treeView.searchString = searchField.OnToolbarGUI(treeView.searchString, GUILayout.ExpandWidth(true));
-				GUILayout.Space(5);
-				if (GUILayout.Button(GC_Add, EditorStyles.toolbarButton, GUILayout.Width(25)))
-				{
-					TextInputWindow.ShowWindow("Favourites", "Enter category name", "", AddCategory, null);
-				}
-				GUI.enabled = treeView.Model.Data.Count > 0;
-				if (GUILayout.Button(GC_Remove, EditorStyles.toolbarButton, GUILayout.Width(25)))
-				{
-					RemoveSelected();
-				}
-				GUI.enabled = true;
-			}
-			EditorGUILayout.EndHorizontal();
-			
-			treeView.OnGUI();
-		}
+        private void AddCategory(TextInputWindow wiz)
+        {
+            var s = wiz.Text;
+            wiz.Close();
+            if (string.IsNullOrEmpty(s)) return;
 
-		// ------------------------------------------------------------------------------------------------------------------
+            FavouritesManager.Instance.AddCategory(s);
 
-		private void AddCategory(TextInputWindow wiz)
-		{
-			string s = wiz.Text;
-			wiz.Close();
-			if (string.IsNullOrEmpty(s)) return;
+            UpdateTreeview();
+            Repaint();
+        }
 
-			asset.AddCategory(s);
-			EditorUtility.SetDirty(asset);
+        private void RemoveSelected()
+        {
+            var ids = treeView.GetSelection();
+            if (ids.Count == 0) return;
 
-			UpdateTreeview();
-			Repaint();
-		}
+            var ele = treeView.Model.Find(ids[0]);
+            if (ele == null) return;
 
-		private void RemoveSelected()
-		{
-			IList<int> ids = treeView.GetSelection();
-			if (ids.Count == 0) return;
+            if (ele.category != null)
+            {
+                // Remove category and all its favourites
+                FavouritesManager.Instance.RemoveCategory(ele.category.id);
+            }
+            else if (ele.fav != null)
+            {
+                // Remove specific favourite
+                var obj = FavouritesManager.Instance.GetObjectFromElement(ele.fav);
+                if (obj != null) FavouritesManager.Instance.RemoveFavourite(obj, ele.fav.categoryId);
+            }
 
-			FavouritesTreeElement ele = treeView.Model.Find(ids[0]);
-			if (ele == null) return;
-
-			if (ele.category != null)
-			{
-				// remove elements from open scene. those in closed scenes will just
-				// have to stay. they will not show up anyway if category is gone
-
-				// remove from scene
-				foreach (FavouritesContainer c in FavouritesEd.Containers)
-				{
-					if (c == null || c.favs == null) continue;
-					for (int i = c.favs.Count - 1; i >= 0; i--)
-					{
-						if (c.favs[i].categoryId == ele.category.id)
-						{
-							c.favs.RemoveAt(i);
-							EditorSceneManager.MarkSceneDirty(c.gameObject.scene);
-						}
-					}
-				}
-
-				// remove favourites linked to this category
-				for (int i = asset.favs.Count - 1; i >= 0; i--)
-				{
-					if (asset.favs[i].categoryId == ele.category.id) asset.favs.RemoveAt(i);
-				}
-
-				// remove category
-				for (int i = 0;i < asset.categories.Count; i++)
-				{
-					if (asset.categories[i].id == ele.category.id)
-					{
-						asset.categories.RemoveAt(i);
-						break;
-					}
-				}
-
-				EditorUtility.SetDirty(asset);
-			}
-			else
-			{
-				bool found = false;
-				for (int i = 0; i < asset.favs.Count; i++)
-				{
-					if (asset.favs[i] == ele.fav)
-					{
-						found = true;
-						asset.favs.RemoveAt(i);
-						EditorUtility.SetDirty(asset);
-						break;
-					}
-				}
-
-				if (!found)
-				{
-					foreach (FavouritesContainer c in FavouritesEd.Containers)
-					{
-						if (c == null || c.favs == null) continue;
-						for (int i = 0; i < c.favs.Count; i++)
-						{
-							if (c.favs[i] == ele.fav)
-							{
-								found = true;
-								c.favs.RemoveAt(i);
-								EditorSceneManager.MarkSceneDirty(c.gameObject.scene);
-								break;
-							}
-						}
-						if (found) break;
-					}
-				}
-			}
-
-			UpdateTreeview();
-			Repaint();			
-		}
-
-		private FavouritesAsset LoadAsset()
-		{			
-			string[] guids = AssetDatabase.FindAssets("t:FavouritesAsset");
-			string fn = (guids.Length > 0 ? AssetDatabase.GUIDToAssetPath(guids[0]) : GetPackageFolder() + "FavouritesAsset.asset");
-			asset = AssetDatabase.LoadAssetAtPath<FavouritesAsset>(fn);
-			if (asset == null)
-			{
-				asset = CreateInstance<FavouritesAsset>();
-				AssetDatabase.CreateAsset(asset, fn);
-				AssetDatabase.SaveAssets();
-			}
-
-			return asset;
-		}
-
-		private string GetPackageFolder()
-		{
-			try
-			{
-				string[] res = System.IO.Directory.GetFiles(Application.dataPath, "FavouritesEdWindow.cs", System.IO.SearchOption.AllDirectories);
-				if (res.Length > 0) return "Assets" + res[0].Replace(Application.dataPath, "").Replace("FavouritesEdWindow.cs", "").Replace("\\", "/");
-			}
-			catch (System.Exception ex)
-			{
-				Debug.LogException(ex);
-			}
-			return "Assets/";
-		}
-
-		// ------------------------------------------------------------------------------------------------------------------
-	}
+            UpdateTreeview();
+            Repaint();
+        }
+    }
 }

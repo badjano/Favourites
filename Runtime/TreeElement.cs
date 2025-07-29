@@ -2,81 +2,71 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-
 namespace FavouritesEd
 {
-	[Serializable]
-	public class TreeElement
-	{
-		[SerializeField] int m_ID;
-		[SerializeField] string m_Name;
-		[SerializeField] int m_Depth;
+    [Serializable]
+    public class TreeElement
+    {
+        [SerializeField] private int m_ID;
+        [SerializeField] private string m_Name;
+        [SerializeField] private int m_Depth;
+        [NonSerialized] private List<TreeElement> m_Children;
 
-		[NonSerialized] TreeElement m_Parent;
-		[NonSerialized] List<TreeElement> m_Children;
+        [NonSerialized] private TreeElement m_Parent;
 
-		public int Depth
-		{
-			get { return m_Depth; }
-			set { m_Depth = value; }
-		}
+        public TreeElement()
+        {
+        }
 
-		public TreeElement Parent
-		{
-			get { return m_Parent; }
-			set { m_Parent = value; }
-		}
+        public TreeElement(string name, int depth, int id)
+        {
+            m_Name = name;
+            m_ID = id;
+            m_Depth = depth;
+        }
 
-		public List<TreeElement> Children
-		{
-			get { return m_Children; }
-			set { m_Children = value; }
-		}
+        public TreeElement(string name, int depth, int id, Texture2D icon)
+        {
+            m_Name = name;
+            m_ID = id;
+            m_Depth = depth;
+            Icon = icon;
+        }
 
-		public bool HasChildren
-		{
-			get { return Children != null && Children.Count > 0; }
-		}
+        public int Depth
+        {
+            get => m_Depth;
+            set => m_Depth = value;
+        }
 
-		public string Name
-		{
-			get { return m_Name; }
-			set { m_Name = value; }
-		}
+        public TreeElement Parent
+        {
+            get => m_Parent;
+            set => m_Parent = value;
+        }
 
-		public virtual string SearchHelper
-		{
-			get { return m_Name; }
-		}
+        public List<TreeElement> Children
+        {
+            get => m_Children;
+            set => m_Children = value;
+        }
 
-		public int ID
-		{
-			get { return m_ID; }
-			set { m_ID = value; }
-		}
+        public bool HasChildren => Children != null && Children.Count > 0;
 
-		public Texture2D Icon { get; set; }
+        public string Name
+        {
+            get => m_Name;
+            set => m_Name = value;
+        }
 
-		public TreeElement()
-		{ }
+        public virtual string SearchHelper => m_Name;
 
-		public TreeElement(string name, int depth, int id)
-		{
-			m_Name = name;
-			m_ID = id;
-			m_Depth = depth;
-		}
+        public int ID
+        {
+            get => m_ID;
+            set => m_ID = value;
+        }
 
-		public TreeElement(string name, int depth, int id, Texture2D icon)
-		{
-			m_Name = name;
-			m_ID = id;
-			m_Depth = depth;
-			Icon = icon;
-		}
-
-		// ------------------------------------------------------------------------------------------------------------
-	}
+        public Texture2D Icon { get; set; }
+    }
 }
-
-

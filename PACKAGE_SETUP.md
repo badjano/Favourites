@@ -59,12 +59,12 @@ This Unity project has been successfully converted into a UPM (Unity Package Man
 - `TreeModel.cs` - Tree data structure management
 - `FavouritesContainer.cs` - Favourites data container
 - `FavouritesElement.cs` - Individual favourite item representation
+- `FavouritesCategory.cs` - Category management
 
 ### Editor Scripts
 - `FavouritesEdWindow.cs` - Main editor window
 - `FavouritesTreeView.cs` - Custom tree view implementation
 - `FavouritesAsset.cs` - Asset representation
-- `FavouritesCategroy.cs` - Category management
 - `TextInputWindow.cs` - Modal input dialog
 - `TreeViewWithTreeModel.cs` - Generic tree view
 - `FavouritesEd.cs` - Editor functionality

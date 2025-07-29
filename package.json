@@ -1,8 +1,8 @@
 {
   "name": "com.badjano.favourites",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "displayName": "Favourites Panel",
-  "description": "A Unity editor extension that adds a Favourites panel with a Tree View where you can add categories and drag-and-drop objects from the Hierarchy or Project panel.",
+  "description": "A Unity editor extension that adds a Favourites panel with a Tree View where you can add categories and drag-and-drop objects from the Hierarchy or Project panel. Each user has their own favourites saved in the persistent data path.",
   "unity": "2021.3",
   "keywords": [
     "editor",

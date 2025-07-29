@@ -1,12 +1,8 @@
-﻿
-
-namespace FavouritesEd
+﻿namespace FavouritesEd
 {
-	public class FavouritesTreeElement : TreeElement
-	{
-		public FavouritesElement fav;
-		public FavouritesCategory category;
-
-		// ------------------------------------------------------------------------------------------------------------
-	}
+    public class FavouritesTreeElement : TreeElement
+    {
+        public FavouritesCategory category;
+        public FavouritesElement fav;
+    }
 }

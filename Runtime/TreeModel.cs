@@ -2,269 +2,260 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-
 namespace FavouritesEd
 {
-	// The TreeModel is a utility class working on a list of serializable TreeElements where the order and the depth of each TreeElement define the tree structure.
-	// Note that the TreeModel itself is not serializable (in Unity we are currently limited to serializing lists/arrays) but the input list is.
-	// The tree representation (parent and children references) are then build internally using TreeElementUtility.ListToTree (using depth values of the elements). 
-	// The first element of the input list is required to have depth == -1 (the hidden root) and the rest to have depth >= 0 (otherwise an exception will be thrown)
+    // The TreeModel is a utility class working on a list of serializable TreeElements where the order and the depth of each TreeElement define the tree structure.
+    // Note that the TreeModel itself is not serializable (in Unity we are currently limited to serializing lists/arrays) but the input list is.
+    // The tree representation (parent and children references) are then build internally using TreeElementUtility.ListToTree (using depth values of the elements). 
+    // The first element of the input list is required to have depth == -1 (the hidden root) and the rest to have depth >= 0 (otherwise an exception will be thrown)
 
-	public class TreeModel<T> where T : TreeElement
-	{
-		private IList<T> m_Data;
-		private T m_Root;
-		private int m_MaxID;
+    public class TreeModel<T> where T : TreeElement
+    {
+        private int m_MaxID;
 
-		public event Action ModelChanged;
-		public T Root { get { return m_Root; } set { m_Root = value; } }
-		public IList<T> Data { get { return m_Data; } }
-		public int NumberOfDataElements { get { return m_Data.Count; } }
+        public TreeModel()
+        {
+        }
 
-		public TreeModel()
-		{ }
+        public TreeModel(IList<T> data)
+        {
+            SetData(data);
+        }
 
-		public TreeModel(IList<T> data)
-		{
-			SetData(data);
-		}
+        public T Root { get; set; }
 
-		public T Find(int id)
-		{
-			return m_Data.FirstOrDefault(element => element.ID == id);
-		}
+        public IList<T> Data { get; private set; }
 
-		public void SetData(IList<T> data)
-		{
-			Init(data);
-		}
+        public int NumberOfDataElements => Data.Count;
 
-		void Init(IList<T> data)
-		{
-			if (data == null)
-			{
-				throw new ArgumentNullException("data", "Input data is null. Ensure input is a non-null list.");
-			}
+        public event Action ModelChanged;
 
-			m_Data = data;
+        public T Find(int id)
+        {
+            return Data.FirstOrDefault(element => element.ID == id);
+        }
 
-			if (m_Data.Count > 0)
-				m_Root = TreeElementUtility.ListToTree(data);
+        public void SetData(IList<T> data)
+        {
+            Init(data);
+        }
 
-			m_MaxID = m_Data.Max(e => e.ID);
-		}
+        private void Init(IList<T> data)
+        {
+            if (data == null)
+                throw new ArgumentNullException("data", "Input data is null. Ensure input is a non-null list.");
 
-		public int GenerateUniqueID()
-		{
-			return ++m_MaxID;
-		}
+            Data = data;
 
-		public IList<int> GetAncestors(int id)
-		{
-			var parents = new List<int>();
-			TreeElement T = Find(id);
-			if (T != null)
-			{
-				while (T.Parent != null)
-				{
-					parents.Add(T.Parent.ID);
-					T = T.Parent;
-				}
-			}
-			return parents;
-		}
+            if (Data.Count > 0)
+                Root = TreeElementUtility.ListToTree(data);
 
-		public IList<int> GetDescendantsThatHaveChildren(int id)
-		{
-			T searchFromThis = Find(id);
-			if (searchFromThis != null)
-			{
-				return GetParentsBelowStackBased(searchFromThis);
-			}
-			return new List<int>();
-		}
+            m_MaxID = Data.Max(e => e.ID);
+        }
 
-		IList<int> GetParentsBelowStackBased(TreeElement searchFromThis)
-		{
-			Stack<TreeElement> stack = new Stack<TreeElement>();
-			stack.Push(searchFromThis);
+        public int GenerateUniqueID()
+        {
+            return ++m_MaxID;
+        }
 
-			var parentsBelow = new List<int>();
-			while (stack.Count > 0)
-			{
-				TreeElement current = stack.Pop();
-				if (current.HasChildren)
-				{
-					parentsBelow.Add(current.ID);
-					foreach (var T in current.Children)
-					{
-						stack.Push(T);
-					}
-				}
-			}
+        public IList<int> GetAncestors(int id)
+        {
+            var parents = new List<int>();
+            TreeElement T = Find(id);
+            if (T != null)
+                while (T.Parent != null)
+                {
+                    parents.Add(T.Parent.ID);
+                    T = T.Parent;
+                }
 
-			return parentsBelow;
-		}
+            return parents;
+        }
 
-		public void RemoveElements(IList<int> elementIDs)
-		{
-			IList<T> elements = m_Data.Where(element => elementIDs.Contains(element.ID)).ToArray();
-			RemoveElements(elements);
-		}
+        public IList<int> GetDescendantsThatHaveChildren(int id)
+        {
+            var searchFromThis = Find(id);
+            if (searchFromThis != null) return GetParentsBelowStackBased(searchFromThis);
+            return new List<int>();
+        }
 
-		public void RemoveElements(IList<T> elements)
-		{
-			foreach (var element in elements)
-				if (element == m_Root)
-					throw new ArgumentException("It is not allowed to remove the root element");
+        private IList<int> GetParentsBelowStackBased(TreeElement searchFromThis)
+        {
+            var stack = new Stack<TreeElement>();
+            stack.Push(searchFromThis);
 
-			var commonAncestors = TreeElementUtility.FindCommonAncestorsWithinList(elements);
+            var parentsBelow = new List<int>();
+            while (stack.Count > 0)
+            {
+                var current = stack.Pop();
+                if (current.HasChildren)
+                {
+                    parentsBelow.Add(current.ID);
+                    foreach (var T in current.Children) stack.Push(T);
+                }
+            }
 
-			foreach (var element in commonAncestors)
-			{
-				element.Parent.Children.Remove(element);
-				element.Parent = null;
-			}
+            return parentsBelow;
+        }
 
-			TreeElementUtility.TreeToList(m_Root, m_Data);
+        public void RemoveElements(IList<int> elementIDs)
+        {
+            IList<T> elements = Data.Where(element => elementIDs.Contains(element.ID)).ToArray();
+            RemoveElements(elements);
+        }
 
-			Changed();
-		}
+        public void RemoveElements(IList<T> elements)
+        {
+            foreach (var element in elements)
+                if (element == Root)
+                    throw new ArgumentException("It is not allowed to remove the root element");
 
-		public void AddElements(IList<T> elements, TreeElement parent, int insertPosition)
-		{
-			if (elements == null)
-				throw new ArgumentNullException("elements", "elements is null");
+            var commonAncestors = TreeElementUtility.FindCommonAncestorsWithinList(elements);
 
-			if (elements.Count == 0)
-				throw new ArgumentNullException("elements", "elements Count is 0: nothing to add");
+            foreach (var element in commonAncestors)
+            {
+                element.Parent.Children.Remove(element);
+                element.Parent = null;
+            }
 
-			if (parent == null)
-				throw new ArgumentNullException("parent", "parent is null");
+            TreeElementUtility.TreeToList(Root, Data);
 
-			if (parent.Children == null)
-				parent.Children = new List<TreeElement>();
+            Changed();
+        }
 
-			parent.Children.InsertRange(insertPosition, elements.Cast<TreeElement>());
-			foreach (var element in elements)
-			{
-				element.Parent = parent;
-				element.Depth = parent.Depth + 1;
-				TreeElementUtility.UpdateDepthValues(element);
-			}
+        public void AddElements(IList<T> elements, TreeElement parent, int insertPosition)
+        {
+            if (elements == null)
+                throw new ArgumentNullException("elements", "elements is null");
 
-			TreeElementUtility.TreeToList(m_Root, m_Data);
+            if (elements.Count == 0)
+                throw new ArgumentNullException("elements", "elements Count is 0: nothing to add");
 
-			Changed();
-		}
+            if (parent == null)
+                throw new ArgumentNullException("parent", "parent is null");
 
-		public void AddRoot(T root)
-		{
-			if (root == null)
-				throw new ArgumentNullException("root", "root is null");
+            if (parent.Children == null)
+                parent.Children = new List<TreeElement>();
 
-			if (m_Data == null)
-				throw new InvalidOperationException("Internal Error: data list is null");
+            parent.Children.InsertRange(insertPosition, elements);
+            foreach (var element in elements)
+            {
+                element.Parent = parent;
+                element.Depth = parent.Depth + 1;
+                TreeElementUtility.UpdateDepthValues(element);
+            }
 
-			if (m_Data.Count != 0)
-				throw new InvalidOperationException("AddRoot is only allowed on empty data list");
+            TreeElementUtility.TreeToList(Root, Data);
 
-			root.ID = GenerateUniqueID();
-			root.Depth = -1;
-			m_Data.Add(root);
-		}
+            Changed();
+        }
 
-		public void AddElement(T element, TreeElement parent, int insertPosition)
-		{
-			if (element == null)
-				throw new ArgumentNullException("element", "element is null");
+        public void AddRoot(T root)
+        {
+            if (root == null)
+                throw new ArgumentNullException("root", "root is null");
 
-			if (parent == null)
-				throw new ArgumentNullException("parent", "parent is null");
+            if (Data == null)
+                throw new InvalidOperationException("Internal Error: data list is null");
 
-			if (parent.Children == null)
-				parent.Children = new List<TreeElement>();
+            if (Data.Count != 0)
+                throw new InvalidOperationException("AddRoot is only allowed on empty data list");
 
-			parent.Children.Insert(insertPosition, element);
-			element.Parent = parent;
+            root.ID = GenerateUniqueID();
+            root.Depth = -1;
+            Data.Add(root);
+        }
 
-			TreeElementUtility.UpdateDepthValues(parent);
-			TreeElementUtility.TreeToList(m_Root, m_Data);
+        public void AddElement(T element, TreeElement parent, int insertPosition)
+        {
+            if (element == null)
+                throw new ArgumentNullException("element", "element is null");
 
-			Changed();
-		}
+            if (parent == null)
+                throw new ArgumentNullException("parent", "parent is null");
 
-		public void QuickAddElement(T element, TreeElement parent)
-		{
-			//if (element == null)
-			//	throw new ArgumentNullException("element", "element is null");
+            if (parent.Children == null)
+                parent.Children = new List<TreeElement>();
 
-			//if (parent == null)
-			//	throw new ArgumentNullException("parent", "parent is null");
+            parent.Children.Insert(insertPosition, element);
+            element.Parent = parent;
 
-			//if (parent.Children == null)
-			//	parent.Children = new List<TreeElement>();
+            TreeElementUtility.UpdateDepthValues(parent);
+            TreeElementUtility.TreeToList(Root, Data);
 
-			//parent.Children.Add(element);
-			//element.Parent = parent;
+            Changed();
+        }
 
-			//TreeElementUtility.UpdateDepthValues(parent);
-			//TreeElementUtility.TreeToList(m_Root, m_Data);
+        public void QuickAddElement(T element, TreeElement parent)
+        {
+            //if (element == null)
+            //	throw new ArgumentNullException("element", "element is null");
 
-			//Changed();
+            //if (parent == null)
+            //	throw new ArgumentNullException("parent", "parent is null");
 
-			if (parent.Children == null)
-				parent.Children = new List<TreeElement>();
+            //if (parent.Children == null)
+            //	parent.Children = new List<TreeElement>();
 
-			parent.Children.Add(element);
-			element.Parent = parent;
-			element.ID = GenerateUniqueID();
-			element.Depth = element.Parent.Depth + 1;
-		}
+            //parent.Children.Add(element);
+            //element.Parent = parent;
 
-		public void UpdateDataFromTree()
-		{
-			TreeElementUtility.TreeToList(m_Root, m_Data);
-		}
+            //TreeElementUtility.UpdateDepthValues(parent);
+            //TreeElementUtility.TreeToList(m_Root, m_Data);
 
-		public void MoveElements(TreeElement parentElement, int insertionIndex, List<TreeElement> elements)
-		{
-			if (insertionIndex < 0)
-				throw new ArgumentException("Invalid input: insertionIndex is -1, client needs to decide what index elements should be re parented at");
+            //Changed();
 
-			// Invalid re-parenting input
-			if (parentElement == null)
-				return;
+            if (parent.Children == null)
+                parent.Children = new List<TreeElement>();
 
-			// We are moving items so we adjust the insertion index to accommodate that any items above the insertion index is removed before inserting
-			if (insertionIndex > 0)
-				insertionIndex -= parentElement.Children.GetRange(0, insertionIndex).Count(elements.Contains);
+            parent.Children.Add(element);
+            element.Parent = parent;
+            element.ID = GenerateUniqueID();
+            element.Depth = element.Parent.Depth + 1;
+        }
 
-			// Remove draggedItems from their parents
-			foreach (var draggedItem in elements)
-			{
-				draggedItem.Parent.Children.Remove(draggedItem);    // remove from old parent
-				draggedItem.Parent = parentElement;                 // set new parent
-			}
+        public void UpdateDataFromTree()
+        {
+            TreeElementUtility.TreeToList(Root, Data);
+        }
 
-			if (parentElement.Children == null)
-				parentElement.Children = new List<TreeElement>();
+        public void MoveElements(TreeElement parentElement, int insertionIndex, List<TreeElement> elements)
+        {
+            if (insertionIndex < 0)
+                throw new ArgumentException(
+                    "Invalid input: insertionIndex is -1, client needs to decide what index elements should be re parented at");
 
-			// Insert dragged items under new parent
-			parentElement.Children.InsertRange(insertionIndex, elements);
+            // Invalid reparenting input
+            if (parentElement == null)
+                return;
 
-			TreeElementUtility.UpdateDepthValues(Root);
-			TreeElementUtility.TreeToList(m_Root, m_Data);
+            // We are moving items so we adjust the insertion index to accommodate that any items above the insertion index is removed before inserting
+            if (insertionIndex > 0)
+                insertionIndex -= parentElement.Children.GetRange(0, insertionIndex).Count(elements.Contains);
 
-			Changed();
-		}
+            // Remove draggedItems from their parents
+            foreach (var draggedItem in elements)
+            {
+                draggedItem.Parent.Children.Remove(draggedItem); // remove from old parent
+                draggedItem.Parent = parentElement; // set new parent
+            }
 
-		void Changed()
-		{
-			var handler = ModelChanged;
-			if (handler != null) handler();
-		}
+            if (parentElement.Children == null)
+                parentElement.Children = new List<TreeElement>();
 
-		// ------------------------------------------------------------------------------------------------------------
-	}
+            // Insert dragged items under new parent
+            parentElement.Children.InsertRange(insertionIndex, elements);
+
+            TreeElementUtility.UpdateDepthValues(Root);
+            TreeElementUtility.TreeToList(Root, Data);
+
+            Changed();
+        }
+
+        private void Changed()
+        {
+            var handler = ModelChanged;
+            if (handler != null) handler();
+        }
+    }
 }
