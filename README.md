@@ -27,7 +27,7 @@ A Unity editor extension that adds a Favourites panel with a Tree View where you
 ## Usage
 
 ### Opening the Panel
-- Go to `Tools > Favourites` in the Unity menu bar
+- Go to `Tools > Favourites > Show Favourites Window` in the Unity menu bar
 - The Favourites panel will open as a dockable window
 - The panel automatically refreshes when the Hierarchy or Project changes
 

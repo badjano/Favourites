@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Each user now has their own favourites saved in `Application.persistentDataPath`
 - Favourites are automatically saved and persist between Unity sessions
 - Removed scene-based storage system in favor of centralized user-specific storage
-- Updated menu location from `Window > Favourites` to `Tools > Favourites`
+- Updated menu location from `Window > Favourites` to `Tools > Favourites > Show Favourites Window`
 
 ### Added
 - `FavouritesManager` singleton for centralized data management

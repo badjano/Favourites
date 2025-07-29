@@ -49,7 +49,7 @@ namespace FavouritesEd
             UpdateTreeview();
         }
 
-        [MenuItem("Tools/Favourites")]
+        [MenuItem("Tools/Favourites/Show Favourites Window", false, 0)]
         private static void ShowWindow()
         {
             GetWindow<FavouritesEdWindow>("Favourites").UpdateTreeview();
