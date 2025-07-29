@@ -123,7 +123,7 @@ namespace FavouritesEd
         protected override void ContextClickedItem(int id)
         {
             var menu = new GenericMenu();
-            menu.AddItem(new GUIContent("Ping"), false, HandleContextOption, id);
+            menu.AddItem(new GUIContent("Locate"), false, HandleContextOption, id);
             menu.ShowAsContext();
         }
 

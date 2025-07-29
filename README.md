@@ -7,7 +7,7 @@ A Unity editor extension that adds a Favourites panel with a Tree View where you
 - **Tree View Interface**: Organize your favourite assets in a hierarchical tree structure
 - **Drag & Drop Support**: Easily drag objects from Hierarchy or Project panel into categories
 - **Category Management**: Add and remove categories with the [+] and [-] buttons
-- **Quick Access**: Double-click items to open them, right-click to ping in Project/Hierarchy
+- **Quick Access**: Double-click items to open them, right-click to locate in Project/Hierarchy
 - **Cross-Panel Integration**: Drag items from Favourites to other Unity panels (Inspector, etc.)
 - **User-Specific Storage**: Each user has their own favourites saved in the persistent data path
 - **Persistent Data**: Favourites are automatically saved and persist between Unity sessions
@@ -45,7 +45,7 @@ A Unity editor extension that adds a Favourites panel with a Tree View where you
 - **Remove Category**: Select a category and click the [-] button (removes category and all its items)
 - **Open Item**: Double-click on any item to open it
 - **Expand/Collapse**: Double-click on a category to expand or collapse it
-- **Ping Item**: Right-click on an item to ping it in the Project or Hierarchy panel
+- **Locate Item**: Right-click on an item to locate it in the Project or Hierarchy panel
 - **Drag to Inspector**: Drag items from Favourites to component properties in the Inspector
 - **Search**: Use the search field to filter items by name
 

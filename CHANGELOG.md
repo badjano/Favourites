@@ -39,7 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Drag and drop support from Hierarchy and Project panels
 - Category management system with add/remove functionality
 - Double-click to open items
-- Right-click to ping items in Project/Hierarchy
+- Right-click to locate items in Project/Hierarchy
 - Cross-panel drag and drop support
 - Editor-only scene object tracking
 - Persistent asset storage
