@@ -17,7 +17,7 @@ A Unity editor extension that adds a Favourites panel with a Tree View where you
 ### Via Git URL (Recommended)
 1. Open Unity Package Manager (Window > Package Manager)
 2. Click the '+' button and select "Add package from git URL"
-3. Enter: `https://github.com/badjano/unity-favourites.git`
+3. Enter: `git@github.com:badjano/Favourites.git`
 
 ### Via Local Package
 1. Download or clone this repository
