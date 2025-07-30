@@ -10,11 +10,33 @@ using UnityEditor;
 namespace FavouritesEd
 {
     [Serializable]
+    public class SavedSearch
+    {
+        public string name;
+        public string query;
+        public int id;
+
+        public SavedSearch()
+        {
+            // Required for JsonUtility serialization
+        }
+
+        public SavedSearch(string name, string query, int id)
+        {
+            this.name = name;
+            this.query = query;
+            this.id = id;
+        }
+    }
+
+    [Serializable]
     public class FavouritesData
     {
         public List<FavouritesElement> favs = new();
         public List<FavouritesCategory> categories = new();
+        public List<SavedSearch> savedSearches = new();
         public int nextCategoryId;
+        public int nextSearchId;
 
         private static string DataPath => Path.Combine(Application.persistentDataPath, "FavouritesData.json");
 
@@ -80,6 +102,24 @@ namespace FavouritesEd
         public FavouritesCategory GetCategory(int categoryId)
         {
             return categories.Find(c => c.id == categoryId);
+        }
+
+        public SavedSearch AddSavedSearch(string name, string query)
+        {
+            var search = new SavedSearch(name, query, nextSearchId);
+            nextSearchId++;
+            savedSearches.Add(search);
+            return search;
+        }
+
+        public void RemoveSavedSearch(int searchId)
+        {
+            savedSearches.RemoveAll(s => s.id == searchId);
+        }
+
+        public SavedSearch GetSavedSearch(int searchId)
+        {
+            return savedSearches.Find(s => s.id == searchId);
         }
 
         public void AddFavourite(Object obj, int categoryId)

@@ -84,5 +84,23 @@ namespace FavouritesEd
         {
             return Data.GetObjectFromElement(element);
         }
+
+        public SavedSearch AddSavedSearch(string name, string query)
+        {
+            var search = Data.AddSavedSearch(name, query);
+            SaveData();
+            return search;
+        }
+
+        public void RemoveSavedSearch(int searchId)
+        {
+            Data.RemoveSavedSearch(searchId);
+            SaveData();
+        }
+
+        public SavedSearch GetSavedSearch(int searchId)
+        {
+            return Data.GetSavedSearch(searchId);
+        }
     }
 }
