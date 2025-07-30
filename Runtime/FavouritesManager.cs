@@ -53,6 +53,12 @@ namespace FavouritesEd
             SaveData();
         }
 
+        public void RenameCategory(int categoryId, string newName)
+        {
+            Data.RenameCategory(categoryId, newName);
+            SaveData();
+        }
+
         public void AddFavourite(Object obj, int categoryId)
         {
             Data.AddFavourite(obj, categoryId);

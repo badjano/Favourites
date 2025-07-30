@@ -123,11 +123,20 @@ namespace FavouritesEd
         protected override void ContextClickedItem(int id)
         {
             var menu = new GenericMenu();
-            menu.AddItem(new GUIContent("Locate"), false, HandleContextOption, id);
+            menu.AddItem(new GUIContent("Locate"), false, HandleLocateOption, id);
+            menu.AddItem(new GUIContent("Remove"), false, HandleRemoveOption, id);
+            
+            // Only show Rename for categories
+            var ele = Model.Find(id);
+            if (ele != null && ele.category != null)
+            {
+                menu.AddItem(new GUIContent("Rename"), false, HandleRenameOption, id);
+            }
+            
             menu.ShowAsContext();
         }
 
-        private void HandleContextOption(object arg)
+        private void HandleLocateOption(object arg)
         {
             var id = (int)arg;
             var ele = Model.Find(id);
@@ -136,6 +145,51 @@ namespace FavouritesEd
                 var obj = FavouritesManager.Instance.GetObjectFromElement(ele.fav);
                 if (obj != null) EditorGUIUtility.PingObject(obj);
             }
+        }
+
+        private void HandleRemoveOption(object arg)
+        {
+            var id = (int)arg;
+            var ele = Model.Find(id);
+            if (ele == null) return;
+
+            if (ele.category != null)
+            {
+                // Remove category and all its favourites
+                FavouritesManager.Instance.RemoveCategory(ele.category.id);
+            }
+            else if (ele.fav != null)
+            {
+                // Remove specific favourite
+                var obj = FavouritesManager.Instance.GetObjectFromElement(ele.fav);
+                if (obj != null) FavouritesManager.Instance.RemoveFavourite(obj, ele.fav.categoryId);
+            }
+
+            // Refresh the tree view
+            LoadAndUpdate(FavouritesManager.Instance.Data);
+        }
+
+        private void HandleRenameOption(object arg)
+        {
+            var id = (int)arg;
+            var ele = Model.Find(id);
+            if (ele == null) return;
+
+            if (ele.category != null)
+            {
+                // Rename category
+                TextInputWindow.ShowWindow("Rename Category", "Enter new category name", ele.category.name, 
+                    (window) => {
+                        var newName = window.Text;
+                        window.Close();
+                        if (!string.IsNullOrEmpty(newName))
+                        {
+                            FavouritesManager.Instance.RenameCategory(ele.category.id, newName);
+                            LoadAndUpdate(FavouritesManager.Instance.Data);
+                        }
+                    }, null);
+            }
+            // Note: Individual favorites don't have names to rename, so we only handle categories
         }
 
         protected override void DoubleClickedItem(int id)

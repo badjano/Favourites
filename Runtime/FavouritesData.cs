@@ -68,6 +68,15 @@ namespace FavouritesEd
             favs.RemoveAll(f => f.categoryId == categoryId);
         }
 
+        public void RenameCategory(int categoryId, string newName)
+        {
+            var category = categories.Find(c => c.id == categoryId);
+            if (category != null)
+            {
+                category.name = newName;
+            }
+        }
+
         public FavouritesCategory GetCategory(int categoryId)
         {
             return categories.Find(c => c.id == categoryId);
