@@ -11,11 +11,14 @@ namespace FavouritesEd
         private static readonly GUIContent GC_Remove = new("-", "Remove selected");
         private static readonly GUIContent GC_SaveSearch = new("💾", "Save current search");
         private static readonly GUIContent GC_RemoveSearch = new("🗑", "Remove saved search");
+        private static readonly GUIContent GC_ExpandAll = new("⏷", "Expand all categories");
+        private static readonly GUIContent GC_CollapseAll = new("⏶", "Collapse all categories");
 
         [SerializeField] private TreeViewState treeViewState;
         private SearchField searchField;
         [SerializeField] private FavouritesTreeView treeView;
         private Vector2 savedSearchesScrollPosition;
+        private bool allCategoriesExpanded = false;
 
         private void OnEnable()
         {
@@ -44,6 +47,13 @@ namespace FavouritesEd
                     TextInputWindow.ShowWindow("Favourites", "Enter category name", "", AddCategory, null);
                 GUI.enabled = treeView.Model.Data.Count > 0;
                 if (GUILayout.Button(GC_Remove, EditorStyles.toolbarButton, GUILayout.Width(25))) RemoveSelected();
+                GUI.enabled = true;
+                
+                // Toggle expand/collapse all categories button
+                GUI.enabled = treeView?.Model != null && treeView.Model.Data.Count > 1;
+                var toggleContent = allCategoriesExpanded ? GC_CollapseAll : GC_ExpandAll;
+                if (GUILayout.Button(toggleContent, EditorStyles.toolbarButton, GUILayout.Width(25)))
+                    ToggleAllCategories();
                 GUI.enabled = true;
             }
             EditorGUILayout.EndHorizontal();
@@ -90,6 +100,10 @@ namespace FavouritesEd
             // Ensure we have fresh data
             FavouritesManager.Instance.RefreshData();
             treeView.LoadAndUpdate(FavouritesManager.Instance.Data);
+            
+            // Reset expansion state when tree is reloaded
+            allCategoriesExpanded = false;
+            
             Repaint();
         }
 
@@ -149,6 +163,28 @@ namespace FavouritesEd
             searchField.downOrUpArrowKeyPressed += treeView.SetFocusAndEnsureSelectedItem;
             
             Repaint();
+        }
+
+        private void ToggleAllCategories()
+        {
+            if (treeView?.Model == null || treeView.Model.Data.Count <= 1) return;
+
+            allCategoriesExpanded = !allCategoriesExpanded;
+            
+            // Get all category elements (children of root)
+            var rootElement = treeView.Model.Root;
+            if (rootElement?.Children != null)
+            {
+                foreach (var categoryElement in rootElement.Children)
+                {
+                    if (categoryElement?.HasChildren == true)
+                    {
+                        treeView.SetExpanded(categoryElement.ID, allCategoriesExpanded);
+                    }
+                }
+            }
+            
+            treeView.Repaint();
         }
 
         private void DrawSavedSearchButtons()
