@@ -123,7 +123,6 @@ namespace FavouritesEd
         protected override void ContextClickedItem(int id)
         {
             var menu = new GenericMenu();
-            menu.AddItem(new GUIContent("Locate"), false, HandleLocateOption, id);
             menu.AddItem(new GUIContent("Remove"), false, HandleRemoveOption, id);
             
             // Only show Rename for categories
@@ -134,6 +133,22 @@ namespace FavouritesEd
             }
             
             menu.ShowAsContext();
+        }
+
+        protected override void SelectionChanged(IList<int> selectedIds)
+        {
+            base.SelectionChanged(selectedIds);
+            
+            // Auto-locate the selected item if it's a favourite (not a category)
+            if (selectedIds.Count > 0)
+            {
+                var ele = Model.Find(selectedIds[0]);
+                if (ele != null && ele.fav != null)
+                {
+                    var obj = FavouritesManager.Instance.GetObjectFromElement(ele.fav);
+                    if (obj != null) EditorGUIUtility.PingObject(obj);
+                }
+            }
         }
 
         private void HandleLocateOption(object arg)
