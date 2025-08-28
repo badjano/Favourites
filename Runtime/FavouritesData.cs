@@ -170,7 +170,6 @@ namespace FavouritesEd
             // Check if we have any reference data
             if (string.IsNullOrEmpty(element.objGUID) && string.IsNullOrEmpty(element.objPath))
             {
-                Debug.LogWarning($"FavouritesElement has no valid reference data - Category: {element.categoryId}");
                 return null;
             }
 
@@ -183,14 +182,6 @@ namespace FavouritesEd
                 {
                     var obj = AssetDatabase.LoadAssetAtPath<Object>(path);
                     if (obj != null) return obj;
-
-                    Debug.LogWarning(
-                        $"Failed to load asset at path '{path}' for GUID '{element.objGUID}' in category {element.categoryId}");
-                }
-                else
-                {
-                    Debug.LogWarning(
-                        $"GUID '{element.objGUID}' could not be resolved to a valid asset path in category {element.categoryId}");
                 }
             }
 
@@ -199,13 +190,9 @@ namespace FavouritesEd
             {
                 var obj = AssetDatabase.LoadAssetAtPath<Object>(element.objPath);
                 if (obj != null) return obj;
-
-                Debug.LogWarning($"Failed to load asset at path '{element.objPath}' in category {element.categoryId}");
             }
 #endif
 
-            Debug.LogWarning(
-                $"Could not load object for favourite in category {element.categoryId} - GUID: '{element.objGUID}', Path: '{element.objPath}'");
             return null;
         }
     }

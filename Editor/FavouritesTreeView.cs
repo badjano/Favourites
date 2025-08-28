@@ -333,7 +333,7 @@ namespace FavouritesEd
                 }
                 catch (Exception ex)
                 {
-                    Debug.LogWarning("Failed to get folder icon name via reflection: " + ex.Message);
+                    // Silently fall back to default icon
                 }
 
             // Fallback to a known folder icon name if reflection fails
@@ -345,7 +345,6 @@ namespace FavouritesEd
             }
             catch (Exception ex)
             {
-                Debug.LogWarning("Failed to invoke folder icon name: " + ex.Message);
                 return "FolderOpened Icon";
             }
         }

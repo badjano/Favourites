@@ -199,7 +199,6 @@ namespace FavouritesEd
                     return DragAndDropVisualMode.Move;
                 }
                 default:
-                    Debug.LogError("Unhandled enum " + args.dragAndDropPosition);
                     return DragAndDropVisualMode.None;
             }
         }

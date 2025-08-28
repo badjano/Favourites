@@ -42,15 +42,11 @@ namespace FavouritesEd
 
                 if (oldAsset != null)
                 {
-                    Debug.Log($"Starting migration from {path}");
-                    Debug.Log($"Found {oldAsset.categories.Count} categories and {oldAsset.favs.Count} favourites");
-
                     // Migrate categories
                     foreach (var category in oldAsset.categories)
                     {
                         FavouritesManager.Instance.AddCategory(category.name);
                         totalCategories++;
-                        Debug.Log($"Migrated category: {category.name} (ID: {category.id})");
                     }
 
                     // Migrate favourites - use the old data structure directly
@@ -71,14 +67,12 @@ namespace FavouritesEd
                             var invalidEntry =
                                 $"Category '{categoryName}' (ID: {element.categoryId}): Missing both GUID and Path";
                             invalidEntries.Add(invalidEntry);
-                            Debug.LogWarning(
-                                $"Skipping invalid favourite entry - Category '{categoryName}' (ID: {element.categoryId}): Missing both GUID and Path");
+
                             continue;
                         }
 
                         // Try to load the object using the old element's GUID and path
                         Object obj = null;
-                        var loadMethod = "";
 
                         if (!string.IsNullOrEmpty(element.objGUID))
                         {
@@ -86,12 +80,6 @@ namespace FavouritesEd
                             if (!string.IsNullOrEmpty(assetPath))
                             {
                                 obj = AssetDatabase.LoadAssetAtPath<Object>(assetPath);
-                                loadMethod = $"GUID {element.objGUID} -> {assetPath}";
-                                Debug.Log($"Loaded object via {loadMethod} -> {(obj != null ? obj.name : "null")}");
-                            }
-                            else
-                            {
-                                Debug.LogWarning($"GUID {element.objGUID} could not be resolved to a valid asset path");
                             }
                         }
 
@@ -99,18 +87,12 @@ namespace FavouritesEd
                         if (obj == null && !string.IsNullOrEmpty(element.objPath))
                         {
                             obj = AssetDatabase.LoadAssetAtPath<Object>(element.objPath);
-                            loadMethod = $"Path {element.objPath}";
-                            Debug.Log($"Loaded object via {loadMethod} -> {(obj != null ? obj.name : "null")}");
                         }
 
                         if (obj != null)
                         {
                             FavouritesManager.Instance.AddFavourite(obj, element.categoryId);
                             successfulFavourites++;
-
-                            var categoryName = GetCategoryName(oldAsset, element.categoryId);
-                            Debug.Log(
-                                $"Successfully migrated favourite: {obj.name} to category '{categoryName}' (ID: {element.categoryId}) (via {loadMethod})");
                         }
                         else
                         {
@@ -120,13 +102,11 @@ namespace FavouritesEd
                             var invalidEntry =
                                 $"Category '{categoryName}' (ID: {element.categoryId}): GUID '{element.objGUID}', Path '{element.objPath}' - Asset not found";
                             invalidEntries.Add(invalidEntry);
-                            Debug.LogWarning(
-                                $"Failed to load object for favourite - Category '{categoryName}' (ID: {element.categoryId}), GUID: {element.objGUID}, Path: {element.objPath}");
+
                         }
                     }
 
                     migrated = true;
-                    Debug.Log($"Migration completed from {path}");
                 }
             }
 
@@ -288,7 +268,7 @@ namespace FavouritesEd
                 FavouritesManager.Instance.Data.nextCategoryId = 0;
                 FavouritesManager.Instance.SaveData();
 
-                Debug.Log("All favourites have been cleared.");
+                EditorUtility.DisplayDialog("Clear Complete", "All favourites have been cleared.", "OK");
             }
         }
 
@@ -304,15 +284,8 @@ namespace FavouritesEd
         public static void DebugCurrentData()
         {
             var data = FavouritesManager.Instance.Data;
-            Debug.Log("Current Favourites Data:");
-            Debug.Log($"Categories: {data.categories.Count}");
-            foreach (var cat in data.categories) Debug.Log($"  - {cat.name} (ID: {cat.id})");
-            Debug.Log($"Favourites: {data.favs.Count}");
-            foreach (var fav in data.favs)
-            {
-                var obj = FavouritesManager.Instance.GetObjectFromElement(fav);
-                Debug.Log($"  - Category {fav.categoryId}: {(obj != null ? obj.name : "null")} (GUID: {fav.objGUID})");
-            }
+            var message = $"Categories: {data.categories.Count}\nFavourites: {data.favs.Count}";
+            EditorUtility.DisplayDialog("Favourites Data Summary", message, "OK");
         }
 
         [MenuItem("Tools/Favourites/Clean Invalid Entries")]
