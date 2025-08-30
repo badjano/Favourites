@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -96,6 +97,72 @@ namespace FavouritesEd
         {
             Data.RemoveSavedSearch(searchId);
             SaveData();
+        }
+
+        public void TrackAssetAccess(Object obj)
+        {
+            if (obj != null)
+            {
+                Data.AddRecentAsset(obj);
+                SaveData();
+            }
+        }
+
+        public void TrackAssetAccessByPath(string assetPath)
+        {
+            if (string.IsNullOrEmpty(assetPath)) return;
+
+#if UNITY_EDITOR
+            var obj = AssetDatabase.LoadAssetAtPath<Object>(assetPath);
+            if (obj != null)
+            {
+                TrackAssetAccess(obj);
+            }
+#endif
+        }
+
+        public List<RecentAsset> GetRecentAssets(int maxCount = 5)
+        {
+            return Data.GetRecentAssets(maxCount);
+        }
+
+        public void ClearRecentAssets()
+        {
+            Data.recentAssets.Clear();
+            SaveData();
+        }
+
+        public Object GetObjectFromRecentAsset(RecentAsset asset)
+        {
+            if (asset == null) return null;
+
+            // Check if we have any reference data
+            if (string.IsNullOrEmpty(asset.objGUID) && string.IsNullOrEmpty(asset.objPath))
+            {
+                return null;
+            }
+
+#if UNITY_EDITOR
+            // Try GUID first
+            if (!string.IsNullOrEmpty(asset.objGUID))
+            {
+                var path = AssetDatabase.GUIDToAssetPath(asset.objGUID);
+                if (!string.IsNullOrEmpty(path))
+                {
+                    var obj = AssetDatabase.LoadAssetAtPath<Object>(path);
+                    if (obj != null) return obj;
+                }
+            }
+
+            // Fallback to path if GUID doesn't work
+            if (!string.IsNullOrEmpty(asset.objPath))
+            {
+                var obj = AssetDatabase.LoadAssetAtPath<Object>(asset.objPath);
+                if (obj != null) return obj;
+            }
+#endif
+
+            return null;
         }
 
         public SavedSearch GetSavedSearch(int searchId)

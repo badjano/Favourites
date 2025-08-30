@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
@@ -62,6 +63,9 @@ namespace FavouritesEd
             DrawSavedSearchButtons();
 
             treeView.OnGUI();
+
+            // Draw recent assets at the bottom
+            DrawRecentAssets();
         }
 
         private void OnHierarchyChange()
@@ -162,6 +166,9 @@ namespace FavouritesEd
             searchField = new SearchField();
             searchField.downOrUpArrowKeyPressed += treeView.SetFocusAndEnsureSelectedItem;
             
+            // Reload the tree view to show all items again
+            treeView.Reload();
+            
             Repaint();
         }
 
@@ -215,6 +222,7 @@ namespace FavouritesEd
                         {
                             treeView.searchString = search.query;
                             treeView.SetFocusAndEnsureSelectedItem();
+                            treeView.Reload(); // Force rebuild of rows to show filtered results
                         }
 
                         if (GUILayout.Button(GC_RemoveSearch, EditorStyles.toolbarButton, GUILayout.Width(20)))
@@ -231,6 +239,80 @@ namespace FavouritesEd
                 EditorGUILayout.EndHorizontal();
                 
                 EditorGUILayout.EndScrollView();
+            }
+            EditorGUILayout.EndHorizontal();
+        }
+
+        private string GetTimeAgo(DateTime dateTime)
+        {
+            var timeSpan = DateTime.Now - dateTime;
+            
+            if (timeSpan.TotalDays >= 1)
+                return $"{(int)timeSpan.TotalDays}d ago";
+            if (timeSpan.TotalHours >= 1)
+                return $"{(int)timeSpan.TotalHours}h ago";
+            if (timeSpan.TotalMinutes >= 1)
+                return $"{(int)timeSpan.TotalMinutes}m ago";
+            
+            return "Just now";
+        }
+
+        private void DrawRecentAssets()
+        {
+            var recentAssets = FavouritesManager.Instance.GetRecentAssets(5);
+            if (recentAssets.Count == 0) return;
+
+            EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
+            {
+                EditorGUILayout.LabelField("🕒 Recent:", EditorStyles.toolbarButton, GUILayout.Width(80));
+                
+                // Debug: Show count of recent assets
+                EditorGUILayout.LabelField($"({recentAssets.Count})", EditorStyles.toolbarButton, GUILayout.Width(40));
+                
+                foreach (var asset in recentAssets)
+                {
+                    var obj = FavouritesManager.Instance.GetObjectFromRecentAsset(asset);
+                    
+                    if (obj != null)
+                    {
+                        var buttonStyle = new GUIStyle(EditorStyles.toolbarButton);
+                        buttonStyle.fixedHeight = 20;
+                        buttonStyle.alignment = TextAnchor.MiddleLeft;
+                        buttonStyle.padding = new RectOffset(5, 5, 2, 2);
+                        
+                        var lastAccess = new DateTime(asset.lastAccessTime);
+                        var timeAgo = GetTimeAgo(lastAccess);
+                        var tooltip = $"{obj.name}\nAccessed {asset.accessCount} time(s)\nLast: {timeAgo}";
+                        
+                        var content = new GUIContent(obj.name, AssetPreview.GetMiniTypeThumbnail(obj.GetType()), tooltip);
+                        
+                        if (GUILayout.Button(content, buttonStyle, GUILayout.Width(EditorStyles.toolbarButton.CalcSize(new GUIContent(obj.name)).x + 10)))
+                        {
+                            // Ping the asset and track access
+                            EditorGUIUtility.PingObject(obj);
+                            FavouritesManager.Instance.TrackAssetAccess(obj);
+                        }
+                    }
+                    else
+                    {
+                        // Debug: Show when asset object is null
+                        EditorGUILayout.LabelField($"Invalid asset: {asset.objGUID}", 
+                            EditorStyles.toolbarButton, GUILayout.Width(40));
+                    }
+                }
+                
+                GUILayout.FlexibleSpace();
+                
+                // Clear recent assets button
+                if (GUILayout.Button("🗑", EditorStyles.toolbarButton, GUILayout.Width(25)))
+                {
+                    if (EditorUtility.DisplayDialog("Clear Recent Assets", 
+                        "Are you sure you want to clear all recent assets?", "Yes", "No"))
+                    {
+                        FavouritesManager.Instance.ClearRecentAssets();
+                        Repaint();
+                    }
+                }
             }
             EditorGUILayout.EndHorizontal();
         }

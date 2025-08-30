@@ -131,6 +131,11 @@ namespace FavouritesEd
             {
                 menu.AddItem(new GUIContent("Rename"), false, HandleRenameOption, id);
             }
+            else if (ele != null && ele.fav != null)
+            {
+                // Show Locate option for favourites
+                menu.AddItem(new GUIContent("Locate"), false, HandleLocateOption, id);
+            }
             
             menu.ShowAsContext();
         }
@@ -146,7 +151,11 @@ namespace FavouritesEd
                 if (ele != null && ele.fav != null)
                 {
                     var obj = FavouritesManager.Instance.GetObjectFromElement(ele.fav);
-                    if (obj != null) EditorGUIUtility.PingObject(obj);
+                    if (obj != null) 
+                    {
+                        EditorGUIUtility.PingObject(obj);
+                        FavouritesManager.Instance.TrackAssetAccess(obj);
+                    }
                 }
             }
         }
@@ -158,7 +167,11 @@ namespace FavouritesEd
             if (ele != null && ele.fav != null)
             {
                 var obj = FavouritesManager.Instance.GetObjectFromElement(ele.fav);
-                if (obj != null) EditorGUIUtility.PingObject(obj);
+                if (obj != null) 
+                {
+                    EditorGUIUtility.PingObject(obj);
+                    FavouritesManager.Instance.TrackAssetAccess(obj);
+                }
             }
         }
 
@@ -213,7 +226,11 @@ namespace FavouritesEd
             if (ele != null && ele.fav != null)
             {
                 var obj = FavouritesManager.Instance.GetObjectFromElement(ele.fav);
-                if (obj != null) AssetDatabase.OpenAsset(obj);
+                if (obj != null) 
+                {
+                    AssetDatabase.OpenAsset(obj);
+                    FavouritesManager.Instance.TrackAssetAccess(obj);
+                }
             }
             else
             {
@@ -302,6 +319,8 @@ namespace FavouritesEd
 
                         // Add to favourites
                         FavouritesManager.Instance.AddFavourite(obj, categoryId);
+                        // Track as recently accessed
+                        FavouritesManager.Instance.TrackAssetAccess(obj);
                     }
                 }
 

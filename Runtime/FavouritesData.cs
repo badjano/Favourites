@@ -30,11 +30,40 @@ namespace FavouritesEd
     }
 
     [Serializable]
+    public class RecentAsset
+    {
+        public string objGUID;
+        public string objPath;
+        public long lastAccessTime;
+        public int accessCount;
+
+        public RecentAsset()
+        {
+            // Required for JsonUtility serialization
+        }
+
+        public RecentAsset(string objGUID, string objPath)
+        {
+            this.objGUID = objGUID;
+            this.objPath = objPath;
+            this.lastAccessTime = DateTime.Now.Ticks;
+            this.accessCount = 1;
+        }
+
+        public void UpdateAccess()
+        {
+            lastAccessTime = DateTime.Now.Ticks;
+            accessCount++;
+        }
+    }
+
+    [Serializable]
     public class FavouritesData
     {
         public List<FavouritesElement> favs = new();
         public List<FavouritesCategory> categories = new();
         public List<SavedSearch> savedSearches = new();
+        public List<RecentAsset> recentAssets = new();
         public int nextCategoryId;
         public int nextSearchId;
 
@@ -120,6 +149,47 @@ namespace FavouritesEd
         public SavedSearch GetSavedSearch(int searchId)
         {
             return savedSearches.Find(s => s.id == searchId);
+        }
+
+        public void AddRecentAsset(Object obj)
+        {
+            if (obj == null) return;
+
+            var guid = "";
+            var path = "";
+
+#if UNITY_EDITOR
+            guid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(obj));
+            path = AssetDatabase.GetAssetPath(obj);
+#endif
+
+            if (string.IsNullOrEmpty(guid) && string.IsNullOrEmpty(path)) return;
+
+            // Check if already exists
+            var existingAsset = recentAssets.Find(ra => ra.objGUID == guid || ra.objPath == path);
+            if (existingAsset != null)
+            {
+                existingAsset.UpdateAccess();
+            }
+            else
+            {
+                var recentAsset = new RecentAsset(guid, path);
+                recentAssets.Add(recentAsset);
+            }
+
+            // Keep only the 5 most recently accessed assets
+            if (recentAssets.Count > 5)
+            {
+                recentAssets.Sort((a, b) => b.lastAccessTime.CompareTo(a.lastAccessTime));
+                recentAssets.RemoveRange(5, recentAssets.Count - 5);
+            }
+        }
+
+        public List<RecentAsset> GetRecentAssets(int maxCount = 5)
+        {
+            // Sort by last access time (most recent first) and return up to maxCount
+            recentAssets.Sort((a, b) => b.lastAccessTime.CompareTo(a.lastAccessTime));
+            return recentAssets.GetRange(0, Math.Min(maxCount, recentAssets.Count));
         }
 
         public void AddFavourite(Object obj, int categoryId)
