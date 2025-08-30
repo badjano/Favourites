@@ -264,10 +264,7 @@ namespace FavouritesEd
 
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
             {
-                EditorGUILayout.LabelField("🕒 Recent:", EditorStyles.toolbarButton, GUILayout.Width(80));
-                
-                // Debug: Show count of recent assets
-                EditorGUILayout.LabelField($"({recentAssets.Count})", EditorStyles.toolbarButton, GUILayout.Width(40));
+                EditorGUILayout.LabelField("🕒", EditorStyles.toolbarButton, GUILayout.Width(30));
                 
                 foreach (var asset in recentAssets)
                 {
