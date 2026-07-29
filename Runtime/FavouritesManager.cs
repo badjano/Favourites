@@ -41,11 +41,17 @@ namespace FavouritesEd
             Data?.Save();
         }
 
-        public FavouritesCategory AddCategory(string name)
+        public FavouritesCategory AddCategory(string name, int parentCategoryId = -1)
         {
-            var category = Data.AddCategory(name);
+            var category = Data.AddCategory(name, parentCategoryId);
             SaveData();
             return category;
+        }
+
+        public FavouritesCategory GetOrAddCategory(string name, int parentCategoryId = -1)
+        {
+            var category = Data.FindCategory(name, parentCategoryId);
+            return category ?? AddCategory(name, parentCategoryId);
         }
 
         public void RemoveCategory(int categoryId)
@@ -57,6 +63,12 @@ namespace FavouritesEd
         public void RenameCategory(int categoryId, string newName)
         {
             Data.RenameCategory(categoryId, newName);
+            SaveData();
+        }
+
+        public void MoveCategory(int categoryId, int parentCategoryId)
+        {
+            Data.MoveCategory(categoryId, parentCategoryId);
             SaveData();
         }
 

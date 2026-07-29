@@ -20,6 +20,7 @@ namespace FavouritesEd
         [SerializeField] private FavouritesTreeView treeView;
         private Vector2 savedSearchesScrollPosition;
         private bool allCategoriesExpanded = false;
+        private int pendingParentCategoryId = -1;
 
         private void OnEnable()
         {
@@ -45,7 +46,10 @@ namespace FavouritesEd
                 }
                 
                 if (GUILayout.Button(GC_Add, EditorStyles.toolbarButton, GUILayout.Width(25)))
+                {
+                    pendingParentCategoryId = GetSelectedCategoryId();
                     TextInputWindow.ShowWindow("Favourites", "Enter category name", "", AddCategory, null);
+                }
                 GUI.enabled = treeView.Model.Data.Count > 0;
                 if (GUILayout.Button(GC_Remove, EditorStyles.toolbarButton, GUILayout.Width(25))) RemoveSelected();
                 GUI.enabled = true;
@@ -104,9 +108,7 @@ namespace FavouritesEd
             // Ensure we have fresh data
             FavouritesManager.Instance.RefreshData();
             treeView.LoadAndUpdate(FavouritesManager.Instance.Data);
-            
-            // Reset expansion state when tree is reloaded
-            allCategoriesExpanded = false;
+            allCategoriesExpanded = AreAllCategoriesExpanded();
             
             Repaint();
         }
@@ -117,10 +119,20 @@ namespace FavouritesEd
             wiz.Close();
             if (string.IsNullOrEmpty(s)) return;
 
-            FavouritesManager.Instance.AddCategory(s);
+            FavouritesManager.Instance.AddCategory(s, pendingParentCategoryId);
+            pendingParentCategoryId = -1;
 
             UpdateTreeview();
             Repaint();
+        }
+
+        private int GetSelectedCategoryId()
+        {
+            var selectedIds = treeView.GetSelection();
+            if (selectedIds.Count == 0) return -1;
+
+            var selectedElement = treeView.Model.Find(selectedIds[0]);
+            return selectedElement?.category?.id ?? -1;
         }
 
         private void RemoveSelected()
@@ -178,20 +190,28 @@ namespace FavouritesEd
 
             allCategoriesExpanded = !allCategoriesExpanded;
             
-            // Get all category elements (children of root)
-            var rootElement = treeView.Model.Root;
-            if (rootElement?.Children != null)
+            foreach (var element in treeView.Model.Data)
             {
-                foreach (var categoryElement in rootElement.Children)
-                {
-                    if (categoryElement?.HasChildren == true)
-                    {
-                        treeView.SetExpanded(categoryElement.ID, allCategoriesExpanded);
-                    }
-                }
+                if (element.category != null)
+                    treeView.SetExpanded(element.ID, allCategoriesExpanded);
             }
             
             treeView.Repaint();
+        }
+
+        private bool AreAllCategoriesExpanded()
+        {
+            if (treeView?.Model == null) return false;
+
+            var hasCategoryWithChildren = false;
+            foreach (var element in treeView.Model.Data)
+            {
+                if (element.category == null || !element.HasChildren) continue;
+                hasCategoryWithChildren = true;
+                if (!treeView.IsExpanded(element.ID)) return false;
+            }
+
+            return hasCategoryWithChildren;
         }
 
         private void DrawSavedSearchButtons()

@@ -15,6 +15,7 @@ namespace FavouritesEd
         private static Func<string> Invoke_folderIconName;
 
         private FavouritesData data;
+        private readonly Dictionary<int, FavouritesTreeElement> categoryElements = new();
 
         public FavouritesTreeView(TreeViewState treeViewState)
             : base(treeViewState)
@@ -26,15 +27,13 @@ namespace FavouritesEd
 
         public void OnGUI()
         {
-            if (Model != null && Model.Data != null && Model.Data.Count > 1)
-            {
-                base.OnGUI(GUILayoutUtility.GetRect(1, 1, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true)));
-            }
-            else
-            {
-                GUILayout.Label(GC_None);
-                GUILayout.FlexibleSpace();
-            }
+            var treeRect = GUILayoutUtility.GetRect(1, 1, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+            base.OnGUI(treeRect);
+
+            if (Model == null || Model.Data == null || Model.Data.Count <= 1)
+                GUI.Label(treeRect, GC_None);
+
+            PersistExpandedCategories();
         }
 
         public void LoadAndUpdate(FavouritesData favsData = null)
@@ -42,12 +41,10 @@ namespace FavouritesEd
             if (favsData != null) data = favsData;
             if (data == null) data = FavouritesManager.Instance.Data;
 
-            // add root
             var treeRoot = new FavouritesTreeElement { ID = 0, Depth = -1, Name = "Root" };
             Model = new TreeModel<FavouritesTreeElement>(new List<FavouritesTreeElement> { treeRoot });
 
-            // add categories
-            var categories = new List<FavouritesTreeElement>();
+            categoryElements.Clear();
             var icon = EditorGUIUtility.IconContent(FolderIconName()).image as Texture2D;
             foreach (var c in data.categories)
             {
@@ -59,15 +56,21 @@ namespace FavouritesEd
                     category = c
                 };
 
-                categories.Add(ele);
-                Model.QuickAddElement(ele, treeRoot);
+                categoryElements.Add(c.id, ele);
             }
 
-            // add favourites from data
+            foreach (var category in data.categories)
+            {
+                var element = categoryElements[category.id];
+                var parent = categoryElements.TryGetValue(category.parentCategoryId, out var parentElement)
+                    ? parentElement
+                    : treeRoot;
+                Model.QuickAddElement(element, parent);
+            }
+
             var favs = new List<FavouritesElement>();
             favs.AddRange(data.favs);
 
-            // sort
             favs.Sort((a, b) =>
             {
                 var r = a.categoryId.CompareTo(b.categoryId);
@@ -81,38 +84,59 @@ namespace FavouritesEd
                 return r;
             });
 
-            // and add to tree
             foreach (var ele in favs)
             {
                 if (ele == null) continue;
 
                 var obj = FavouritesManager.Instance.GetObjectFromElement(ele);
                 if (obj == null) continue;
-                foreach (var c in categories)
-                    if (c.category.id == ele.categoryId)
-                    {
-                        var nm = obj.name;
-                        var go = obj as GameObject;
-                        if (go != null && go.scene.IsValid()) nm = string.Format("{0} ({1})", nm, go.scene.name);
+                if (!categoryElements.TryGetValue(ele.categoryId, out var categoryElement)) continue;
 
-                        icon = AssetPreview.GetMiniTypeThumbnail(obj.GetType());
+                var nm = obj.name;
+                var go = obj as GameObject;
+                if (go != null && go.scene.IsValid()) nm = string.Format("{0} ({1})", nm, go.scene.name);
 
-                        Model.QuickAddElement(new FavouritesTreeElement
-                        {
-                            Name = nm,
-                            Icon = icon,
-                            ID = Model.GenerateUniqueID(),
-                            fav = ele
-                        }, c);
+                icon = AssetPreview.GetMiniTypeThumbnail(obj.GetType());
 
-                        break;
-                    }
+                Model.QuickAddElement(new FavouritesTreeElement
+                {
+                    Name = nm,
+                    Icon = icon,
+                    ID = Model.GenerateUniqueID(),
+                    fav = ele
+                }, categoryElement);
             }
 
+            TreeElementUtility.UpdateDepthValues(treeRoot);
             Model.UpdateDataFromTree();
             Init(Model);
             Reload();
+            RestoreExpandedCategories();
             SetSelection(new List<int>());
+        }
+
+        private void RestoreExpandedCategories()
+        {
+            var expandedCategoryIds = new HashSet<int>(data.expandedCategoryIds);
+            foreach (var pair in categoryElements)
+                SetExpanded(pair.Value.ID, expandedCategoryIds.Contains(pair.Key));
+        }
+
+        private void PersistExpandedCategories()
+        {
+            if (data == null || Model == null) return;
+
+            var expandedCategoryIds = new List<int>();
+            foreach (var pair in categoryElements)
+                if (IsExpanded(pair.Value.ID))
+                    expandedCategoryIds.Add(pair.Key);
+
+            if (expandedCategoryIds.Count == data.expandedCategoryIds.Count &&
+                expandedCategoryIds.TrueForAll(data.expandedCategoryIds.Contains))
+                return;
+
+            data.expandedCategoryIds = expandedCategoryIds;
+            FavouritesManager.Instance.SaveData();
         }
 
         protected override void RowGUI(RowGUIArgs args)
@@ -246,11 +270,10 @@ namespace FavouritesEd
 
         protected override bool CanStartDrag(CanStartDragArgs args)
         {
-            if (data == null || data.categories.Count == 0 ||
-                !rootItem.hasChildren || args.draggedItem.parent == rootItem)
-                return false;
+            if (data == null || args.draggedItem == null) return false;
 
-            return true;
+            var element = Model.Find(args.draggedItem.id);
+            return element != null && (element.category != null || element.fav != null);
         }
 
         protected override void SetupDragAndDrop(SetupDragAndDropArgs args)
@@ -258,68 +281,60 @@ namespace FavouritesEd
             if (args.draggedItemIDs.Count == 0) return;
 
             var item = Model.Find(args.draggedItemIDs[0]);
-            if (item == null || item.fav == null) return;
-
-            var obj = FavouritesManager.Instance.GetObjectFromElement(item.fav);
-            if (obj == null) return;
+            if (item == null) return;
 
             DragAndDrop.PrepareStartDrag();
             DragAndDrop.SetGenericData(DragAndDropID, item);
-            DragAndDrop.objectReferences = new[] { obj };
-            DragAndDrop.StartDrag(obj.name);
+
+            if (item.fav != null)
+            {
+                var obj = FavouritesManager.Instance.GetObjectFromElement(item.fav);
+                if (obj == null) return;
+                DragAndDrop.objectReferences = new[] { obj };
+            }
+            else
+            {
+                DragAndDrop.objectReferences = Array.Empty<UnityEngine.Object>();
+            }
+
+            DragAndDrop.StartDrag(item.Name);
         }
 
         protected override DragAndDropVisualMode HandleDragAndDrop(DragAndDropArgs args)
         {
-            if (data == null || data.categories.Count == 0 || !rootItem.hasChildren)
+            if (data == null) return DragAndDropVisualMode.Rejected;
+
+            var targetCategory = GetDropTargetCategory(args.parentItem);
+            var draggedElement = DragAndDrop.GetGenericData(DragAndDropID) as FavouritesTreeElement;
+
+            if (draggedElement == null && DragAndDrop.objectReferences.Length == 0)
                 return DragAndDropVisualMode.Rejected;
 
             if (args.performDrop)
             {
-                FavouritesTreeElement ele;
-                var id = args.parentItem == null ? -1 : args.parentItem.id;
-                if (id < 0 || (ele = Model.Find(id)) == null || ele.category == null)
+                if (draggedElement?.category != null)
                 {
-                    var ids = GetSelection();
-                    if (ids.Count > 0)
-                    {
-                        var item = FindItem(ids[0], rootItem);
-                        if (item == null) return DragAndDropVisualMode.Rejected;
-                        id = item.parent == rootItem ? item.id : item.parent.id;
-                    }
-                    else
-                    {
-                        id = rootItem.children[0].id;
-                    }
-
-                    ele = Model.Find(id);
+                    var parentCategoryId = targetCategory?.id ?? -1;
+                    FavouritesManager.Instance.MoveCategory(draggedElement.category.id, parentCategoryId);
                 }
-
-                if (ele == null || ele.category == null) return DragAndDropVisualMode.Rejected;
-
-                var categoryId = ele.category.id;
-
-                // first check if it is "internal" drag drop from one category to another
-                var draggedEle = DragAndDrop.GetGenericData(DragAndDropID) as FavouritesTreeElement;
-                if (draggedEle != null)
+                else if (draggedElement?.fav != null)
                 {
-                    // Update the category ID for the dragged element
-                    draggedEle.fav.categoryId = categoryId;
+                    var obj = FavouritesManager.Instance.GetObjectFromElement(draggedElement.fav);
+                    var category = targetCategory ?? GetOrCreateTypeCategory(obj);
+                    if (category == null) return DragAndDropVisualMode.Rejected;
+
+                    draggedElement.fav.categoryId = category.id;
                     FavouritesManager.Instance.SaveData();
                 }
-
-                // else the drag-drop originated somewhere else
                 else
                 {
-                    var objs = DragAndDrop.objectReferences;
-                    foreach (var obj in objs)
+                    foreach (var obj in DragAndDrop.objectReferences)
                     {
-                        // make sure it is not a component
                         if (obj as Component != null) continue;
 
-                        // Add to favourites
-                        FavouritesManager.Instance.AddFavourite(obj, categoryId);
-                        // Track as recently accessed
+                        var category = targetCategory ?? GetOrCreateTypeCategory(obj);
+                        if (category == null) continue;
+                        FavouritesManager.Instance.AddFavourite(obj, category.id);
                         FavouritesManager.Instance.TrackAssetAccess(obj);
                     }
                 }
@@ -327,7 +342,28 @@ namespace FavouritesEd
                 LoadAndUpdate();
             }
 
-            return DragAndDropVisualMode.Generic;
+            return draggedElement?.category != null
+                ? DragAndDropVisualMode.Move
+                : DragAndDropVisualMode.Generic;
+        }
+
+        private FavouritesCategory GetDropTargetCategory(TreeViewItem parentItem)
+        {
+            if (parentItem == null) return null;
+
+            var element = Model.Find(parentItem.id);
+            if (element?.category != null) return element.category;
+            if (element?.fav == null) return null;
+
+            return data.GetCategory(element.fav.categoryId);
+        }
+
+        private FavouritesCategory GetOrCreateTypeCategory(UnityEngine.Object obj)
+        {
+            if (obj == null) return null;
+
+            var categoryName = ObjectNames.NicifyVariableName(obj.GetType().Name);
+            return FavouritesManager.Instance.GetOrAddCategory(categoryName);
         }
 
         private static string FolderIconName()

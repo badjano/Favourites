@@ -60,12 +60,16 @@ namespace FavouritesEd
     [Serializable]
     public class FavouritesData
     {
+        private const int CurrentVersion = 1;
+
         public List<FavouritesElement> favs = new();
         public List<FavouritesCategory> categories = new();
         public List<SavedSearch> savedSearches = new();
         public List<RecentAsset> recentAssets = new();
+        public List<int> expandedCategoryIds = new();
         public int nextCategoryId;
         public int nextSearchId;
+        public int version = CurrentVersion;
 
         private static string DataPath => Path.Combine(Application.persistentDataPath, "FavouritesData.json");
 
@@ -75,14 +79,15 @@ namespace FavouritesEd
                 try
                 {
                     var json = File.ReadAllText(DataPath);
-                    return JsonUtility.FromJson<FavouritesData>(json);
+                    var data = JsonUtility.FromJson<FavouritesData>(json) ?? new FavouritesData();
+                    data.EnsureValidData();
+                    return data;
                 }
                 catch (Exception e)
                 {
                     Debug.LogError($"Failed to load favourites data: {e.Message}");
                 }
 
-            // Return default data if file doesn't exist or loading failed
             return new FavouritesData();
         }
 
@@ -90,6 +95,7 @@ namespace FavouritesEd
         {
             try
             {
+                EnsureValidData();
                 var json = JsonUtility.ToJson(this, true);
                 File.WriteAllText(DataPath, json);
             }
@@ -99,12 +105,13 @@ namespace FavouritesEd
             }
         }
 
-        public FavouritesCategory AddCategory(string name)
+        public FavouritesCategory AddCategory(string name, int parentCategoryId = -1)
         {
             var c = new FavouritesCategory
             {
                 id = nextCategoryId,
-                name = name
+                name = name,
+                parentCategoryId = GetCategory(parentCategoryId) == null ? -1 : parentCategoryId
             };
 
             nextCategoryId++;
@@ -115,8 +122,26 @@ namespace FavouritesEd
 
         public void RemoveCategory(int categoryId)
         {
-            categories.RemoveAll(c => c.id == categoryId);
-            favs.RemoveAll(f => f.categoryId == categoryId);
+            var categoryIdsToRemove = new HashSet<int> { categoryId };
+            var foundChild = true;
+
+            while (foundChild)
+            {
+                foundChild = false;
+                foreach (var category in categories)
+                {
+                    if (!categoryIdsToRemove.Contains(category.parentCategoryId) ||
+                        categoryIdsToRemove.Contains(category.id))
+                        continue;
+
+                    categoryIdsToRemove.Add(category.id);
+                    foundChild = true;
+                }
+            }
+
+            categories.RemoveAll(c => categoryIdsToRemove.Contains(c.id));
+            favs.RemoveAll(f => categoryIdsToRemove.Contains(f.categoryId));
+            expandedCategoryIds.RemoveAll(categoryIdsToRemove.Contains);
         }
 
         public void RenameCategory(int categoryId, string newName)
@@ -131,6 +156,31 @@ namespace FavouritesEd
         public FavouritesCategory GetCategory(int categoryId)
         {
             return categories.Find(c => c.id == categoryId);
+        }
+
+        public FavouritesCategory FindCategory(string name, int parentCategoryId)
+        {
+            return categories.Find(c =>
+                c.parentCategoryId == parentCategoryId &&
+                string.Equals(c.name, name, StringComparison.OrdinalIgnoreCase));
+        }
+
+        public void MoveCategory(int categoryId, int parentCategoryId)
+        {
+            var category = GetCategory(categoryId);
+            if (category == null || categoryId == parentCategoryId) return;
+            if (parentCategoryId >= 0 && GetCategory(parentCategoryId) == null) return;
+
+            var ancestorId = parentCategoryId;
+            while (ancestorId >= 0)
+            {
+                if (ancestorId == categoryId) return;
+                var ancestor = GetCategory(ancestorId);
+                if (ancestor == null) break;
+                ancestorId = ancestor.parentCategoryId;
+            }
+
+            category.parentCategoryId = parentCategoryId;
         }
 
         public SavedSearch AddSavedSearch(string name, string query)
@@ -264,6 +314,52 @@ namespace FavouritesEd
 #endif
 
             return null;
+        }
+
+        private void EnsureValidData()
+        {
+            favs ??= new List<FavouritesElement>();
+            categories ??= new List<FavouritesCategory>();
+            savedSearches ??= new List<SavedSearch>();
+            recentAssets ??= new List<RecentAsset>();
+            expandedCategoryIds ??= new List<int>();
+
+            if (version < CurrentVersion)
+            {
+                foreach (var category in categories)
+                    category.parentCategoryId = -1;
+                version = CurrentVersion;
+            }
+
+            var highestCategoryId = -1;
+            foreach (var category in categories)
+            {
+                highestCategoryId = Math.Max(highestCategoryId, category.id);
+                if (category.parentCategoryId == category.id || GetCategory(category.parentCategoryId) == null)
+                    category.parentCategoryId = -1;
+            }
+
+            foreach (var category in categories)
+            {
+                var visitedCategoryIds = new HashSet<int> { category.id };
+                var ancestorId = category.parentCategoryId;
+
+                while (ancestorId >= 0)
+                {
+                    if (!visitedCategoryIds.Add(ancestorId))
+                    {
+                        category.parentCategoryId = -1;
+                        break;
+                    }
+
+                    var ancestor = GetCategory(ancestorId);
+                    if (ancestor == null) break;
+                    ancestorId = ancestor.parentCategoryId;
+                }
+            }
+
+            nextCategoryId = Math.Max(nextCategoryId, highestCategoryId + 1);
+            expandedCategoryIds.RemoveAll(id => GetCategory(id) == null);
         }
     }
 }

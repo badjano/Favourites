@@ -7,5 +7,6 @@ namespace FavouritesEd
     {
         public int id;
         public string name;
+        public int parentCategoryId = -1;
     }
 }
