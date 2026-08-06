@@ -144,23 +144,39 @@ namespace FavouritesEd
             base.RowGUI(args);
         }
 
+        protected override void KeyEvent()
+        {
+            if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.F2)
+            {
+                var selection = GetSelection();
+                if (selection.Count > 0)
+                {
+                    HandleRenameOption(selection[0]);
+                    Event.current.Use();
+                    return;
+                }
+            }
+
+            base.KeyEvent();
+        }
+
         protected override void ContextClickedItem(int id)
         {
             var menu = new GenericMenu();
             menu.AddItem(new GUIContent("Remove"), false, HandleRemoveOption, id);
-            
-            // Only show Rename for categories
+
             var ele = Model.Find(id);
             if (ele != null && ele.category != null)
             {
                 menu.AddItem(new GUIContent("Rename"), false, HandleRenameOption, id);
+                menu.AddItem(new GUIContent("Add Sub Folder"), false, HandleAddSubFolderOption, id);
             }
             else if (ele != null && ele.fav != null)
             {
-                // Show Locate option for favourites
+                menu.AddItem(new GUIContent("Rename"), false, HandleRenameOption, id);
                 menu.AddItem(new GUIContent("Locate"), false, HandleLocateOption, id);
             }
-            
+
             menu.ShowAsContext();
         }
 
@@ -221,6 +237,24 @@ namespace FavouritesEd
             LoadAndUpdate(FavouritesManager.Instance.Data);
         }
 
+        private void HandleAddSubFolderOption(object arg)
+        {
+            var id = (int)arg;
+            var ele = Model.Find(id);
+            if (ele?.category == null) return;
+
+            var parentCategoryId = ele.category.id;
+            TextInputWindow.ShowWindow("Favourites", "Enter category name", "", window =>
+            {
+                var name = window.Text;
+                window.Close();
+                if (string.IsNullOrEmpty(name)) return;
+
+                FavouritesManager.Instance.AddCategory(name, parentCategoryId);
+                LoadAndUpdate(FavouritesManager.Instance.Data);
+            }, null);
+        }
+
         private void HandleRenameOption(object arg)
         {
             var id = (int)arg;
@@ -229,19 +263,48 @@ namespace FavouritesEd
 
             if (ele.category != null)
             {
-                // Rename category
-                TextInputWindow.ShowWindow("Rename Category", "Enter new category name", ele.category.name, 
-                    (window) => {
+                TextInputWindow.ShowWindow("Rename Category", "Enter new category name", ele.category.name,
+                    window =>
+                    {
                         var newName = window.Text;
                         window.Close();
-                        if (!string.IsNullOrEmpty(newName))
-                        {
-                            FavouritesManager.Instance.RenameCategory(ele.category.id, newName);
-                            LoadAndUpdate(FavouritesManager.Instance.Data);
-                        }
+                        if (string.IsNullOrEmpty(newName)) return;
+
+                        FavouritesManager.Instance.RenameCategory(ele.category.id, newName);
+                        LoadAndUpdate(FavouritesManager.Instance.Data);
                     }, null);
+                return;
             }
-            // Note: Individual favorites don't have names to rename, so we only handle categories
+
+            if (ele.fav == null) return;
+
+            var obj = FavouritesManager.Instance.GetObjectFromElement(ele.fav);
+            if (obj == null) return;
+
+            TextInputWindow.ShowWindow("Rename", "Enter new name", obj.name, window =>
+            {
+                var newName = window.Text;
+                window.Close();
+                if (string.IsNullOrEmpty(newName) || newName == obj.name) return;
+
+                var assetPath = AssetDatabase.GetAssetPath(obj);
+                if (!string.IsNullOrEmpty(assetPath))
+                {
+                    var error = AssetDatabase.RenameAsset(assetPath, newName);
+                    if (!string.IsNullOrEmpty(error))
+                        Debug.LogError(error);
+                    else
+                        AssetDatabase.SaveAssets();
+                }
+                else
+                {
+                    Undo.RecordObject(obj, "Rename Favourite");
+                    obj.name = newName;
+                    EditorUtility.SetDirty(obj);
+                }
+
+                LoadAndUpdate(FavouritesManager.Instance.Data);
+            }, null);
         }
 
         protected override void DoubleClickedItem(int id)
